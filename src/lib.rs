@@ -112,7 +112,7 @@ impl Grid {
 
                 match g.set(x, y) {
                     Ok(_) => {
-                        let score = minmax(g);
+                        let score = minimax(g);
                         update_best_score(score, x, y);
                     }
                     Err(_) => (),
@@ -179,27 +179,47 @@ impl Grid {
     }
 }
 
-pub fn minmax(grid: Grid) -> i32 {
+pub fn minimax(grid: Grid) -> i32 {
     if grid.has_winner() {
-        return 1;
+        if grid.player_turn == Player::X {
+            return 10 - grid.number_of_turns;
+        } else {
+            return grid.number_of_turns - 10;
+        }
     }
 
     if grid.is_full() {
         return 0;
     }
 
-    let mut score = 0;
+    let mut score = None;
+
+    let mut update_score = |v2| {
+        match score {
+            Some(v) => {
+                if grid.player_turn == Player::X && v > v2 {
+                    score = Some(v2);
+                }
+                if grid.player_turn == Player::O && v < v2 {
+                    score = Some(v2);
+                }
+            },
+            None => score = Some(v2),
+        }
+    };
+
     for (y, &row) in grid.matrix.iter().enumerate() {
         for (x, &square) in row.iter().enumerate() {
             if square == Player::Empty {
                 let mut ng = grid.clone();
                 let _ = ng.set(x, y);
-                score -= minmax(ng);
+                let s = minimax(ng);
+                update_score(s);
             }
         }
     }
 
-    return score;
+    return score.unwrap_or(0);
 }
 
 pub fn display(grid: &Grid) {
@@ -216,91 +236,122 @@ pub fn display(grid: &Grid) {
 mod tests {
     use super::*;
 
-    #[test]
-    fn check_diag() {
-        let grid = Grid::from([
-            [Player::X, Player::Empty, Player::Empty],
-            [Player::O, Player::X, Player::Empty],
-            [Player::O, Player::Empty, Player::X],
-        ]);
+    mod win {
+        use super::*;
 
-        assert_eq!(grid.has_winner(), true);
+        #[test]
+        fn check_diag() {
+            let grid = Grid::from([
+                [Player::X, Player::Empty, Player::Empty],
+                [Player::O, Player::X, Player::Empty],
+                [Player::O, Player::Empty, Player::X],
+            ]);
+    
+            assert_eq!(grid.has_winner(), true);
+        }
+    
+        #[test]
+        fn check_antidiag() {
+            let grid = Grid::from([
+                [Player::O, Player::Empty, Player::X],
+                [Player::X, Player::X, Player::Empty],
+                [Player::X, Player::O, Player::O],
+            ]);
+    
+            assert_eq!(grid.has_winner(), true);
+        }
+    
+        #[test]
+        fn check_col() {
+            let grid = Grid::from([
+                [Player::O, Player::X, Player::Empty],
+                [Player::O, Player::X, Player::X],
+                [Player::O, Player::Empty, Player::X],
+            ]);
+    
+            assert_eq!(grid.has_winner(), true);
+        }
+    
+        #[test]
+        fn check_row() {
+            let grid = Grid::from([
+                [Player::X, Player::X, Player::X],
+                [Player::O, Player::X, Player::Empty],
+                [Player::O, Player::Empty, Player::O],
+            ]);
+    
+            assert_eq!(grid.has_winner(), true);
+        }
+    
+        #[test]
+        fn no_winner() {
+            let grid = Grid::from([
+                [Player::X, Player::Empty, Player::Empty],
+                [Player::O, Player::O, Player::X],
+                [Player::O, Player::X, Player::X],
+            ]);
+    
+            assert_eq!(grid.has_winner(), false);
+        }
+    
+        #[test]
+        fn empty_no_winner() {
+            let grid = Grid::from([
+                [Player::Empty, Player::Empty, Player::Empty],
+                [Player::Empty, Player::Empty, Player::Empty],
+                [Player::Empty, Player::Empty, Player::Empty],
+            ]);
+    
+            assert_eq!(grid.has_winner(), false);
+        }
+    
+        #[test]
+        fn is_full() {
+            let grid = Grid::from([
+                [Player::X, Player::X, Player::O],
+                [Player::O, Player::O, Player::X],
+                [Player::O, Player::X, Player::X],
+            ]);
+    
+            assert_eq!(grid.is_full(), true);
+        }
+    
+        #[test]
+        fn is_not_full() {
+            let grid = Grid::from([
+                [Player::Empty, Player::X, Player::O],
+                [Player::O, Player::Empty, Player::X],
+                [Player::O, Player::X, Player::X],
+            ]);
+    
+            assert_eq!(grid.is_full(), false);
+        }
     }
 
-    #[test]
-    fn check_antidiag() {
-        let grid = Grid::from([
-            [Player::O, Player::Empty, Player::X],
-            [Player::X, Player::X, Player::Empty],
-            [Player::X, Player::O, Player::O],
-        ]);
+    mod bot {
+        use super::*;
 
-        assert_eq!(grid.has_winner(), true);
+        #[test]
+        fn immediate_win() {
+            let grid = Grid::from([
+                [Player::Empty, Player::O, Player::Empty],
+                [Player::X, Player::O, Player::X],
+                [Player::Empty, Player::Empty, Player::X],
+            ]);
+    
+            assert_eq!(grid.best_play(), Some((1, 2)));
+        }
+    
+        #[test]
+        fn immediate_lose() {
+            let grid = Grid::from([
+                [Player::O, Player::Empty, Player::X],
+                [Player::Empty, Player::Empty, Player::X],
+                [Player::Empty, Player::Empty, Player::Empty],
+            ]);
+    
+            assert_eq!(grid.best_play(), Some((2, 2)));
+        }
     }
 
-    #[test]
-    fn check_col() {
-        let grid = Grid::from([
-            [Player::O, Player::X, Player::Empty],
-            [Player::O, Player::X, Player::X],
-            [Player::O, Player::Empty, Player::X],
-        ]);
-
-        assert_eq!(grid.has_winner(), true);
-    }
-
-    #[test]
-    fn check_row() {
-        let grid = Grid::from([
-            [Player::X, Player::X, Player::X],
-            [Player::O, Player::X, Player::Empty],
-            [Player::O, Player::Empty, Player::O],
-        ]);
-
-        assert_eq!(grid.has_winner(), true);
-    }
-
-    #[test]
-    fn no_winner() {
-        let grid = Grid::from([
-            [Player::X, Player::Empty, Player::Empty],
-            [Player::O, Player::O, Player::X],
-            [Player::O, Player::X, Player::X],
-        ]);
-
-        assert_eq!(grid.has_winner(), false);
-    }
-
-    #[test]
-    fn empty_no_winner() {
-        let grid = Grid::from([
-            [Player::Empty, Player::Empty, Player::Empty],
-            [Player::Empty, Player::Empty, Player::Empty],
-            [Player::Empty, Player::Empty, Player::Empty],
-        ]);
-
-        assert_eq!(grid.has_winner(), false);
-    }
-
-    #[test]
-    fn is_full() {
-        let grid = Grid::from([
-            [Player::X, Player::X, Player::O],
-            [Player::O, Player::O, Player::X],
-            [Player::O, Player::X, Player::X],
-        ]);
-
-        assert_eq!(grid.is_full(), true);
-    }
-
-    #[test]
-    fn is_not_full() {
-        let grid = Grid::from([
-            [Player::Empty, Player::X, Player::O],
-            [Player::O, Player::Empty, Player::X],
-            [Player::O, Player::X, Player::X],
-        ]);
-
-        assert_eq!(grid.is_full(), false);
-    }
 }
