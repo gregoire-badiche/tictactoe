@@ -17,7 +17,7 @@ fn main_loop(mut grid: Grid) {
                 match grid.set(x as usize, y as usize) {
                     Ok(_) => break,
                     Err(p) => {
-                        println!("Theses coordinates already have an {p}. Please enter again : ")
+                        println!("Theses coordinates already have an {p}.")
                     }
                 }
             }
