@@ -16,13 +16,19 @@ fn main_loop(mut grid: Grid) {
                 (x, y) = player_turn();
                 match grid.set(x as usize, y as usize) {
                     Ok(_) => break,
-                    Err(p) => println!("Theses coordinates already have an {p}. Please enter again : "),
+                    Err(p) => {
+                        println!("Theses coordinates already have an {p}. Please enter again : ")
+                    }
                 }
             }
         } else {
             match grid.best_play() {
-                Some(coo) => { let _ = grid.set(coo.0, coo.1); },
-                None => { break; },
+                Some(coo) => {
+                    let _ = grid.set(coo.0, coo.1);
+                }
+                None => {
+                    break;
+                }
             }
         }
     }
@@ -48,7 +54,7 @@ fn player_turn() -> (i32, i32) {
         match read_player_trial() {
             Ok(res) => {
                 return res;
-            },
+            }
             Err(e) => println!("{e} : "),
         }
     }
@@ -72,16 +78,17 @@ fn read_player_trial() -> Result<(i32, i32), &'static str> {
     for (i, _) in trimmed.char_indices() {
         let char = &trimmed[i..=i];
 
-
         match char.parse::<i32>() {
             Ok(n) => match x {
-                None => x = {
-                    if n < 4 && n > 0 {
-                        Some(n - 1)
-                    } else {
-                        return Err("Please enter valid coordinates");
+                None => {
+                    x = {
+                        if n < 4 && n > 0 {
+                            Some(n - 1)
+                        } else {
+                            return Err("Please enter valid coordinates");
+                        }
                     }
-                },
+                }
                 Some(_) => {
                     return Err("Please enter valid coordinates");
                 }
