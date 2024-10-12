@@ -43,8 +43,8 @@ fn end_game(grid: Grid) {
 }
 
 fn player_turn() -> (i32, i32) {
+    println!("Please enter some coordinates : ");
     loop {
-        println!("Please enter some coordinates : ");
         match read_player_trial() {
             Ok(res) => {
                 return res;
